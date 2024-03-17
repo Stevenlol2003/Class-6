@@ -1,0 +1,179 @@
+---
+title: "Final Project Report"
+author: "Brooke Clark, Tai-Yu Lee, Steven Ren, Nick Rusch"
+date: "2023-04-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE, error = TRUE, fig.height = 3)
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+library(broman)
+source("../scripts/viridis.R")
+source("../scripts/ggprob.R")
+theme_set(theme_minimal())
+
+
+```
+
+
+```{r, include=FALSE} 
+GB = read_csv("../data/GB-airport-data.csv")
+```
+
+```{r, include=FALSE} 
+GBdf = GB %>% 
+  filter(!DATE %in% c(1887, 1888, 1889, 1890, 1891, 1892, 1893, 1894, 1895, 1896, 1897, 1898, 1899)) %>% 
+  subset(select = -c(AWND, AWND_ATTRIBUTES, CDSD_ATTRIBUTES, CLDD_ATTRIBUTES, DP01_ATTRIBUTES, DP10_ATTRIBUTES, DP1X_ATTRIBUTES, DSND_ATTRIBUTES, DSNW_ATTRIBUTES, DT00_ATTRIBUTES, DT32_ATTRIBUTES, DX32_ATTRIBUTES, DX70_ATTRIBUTES, DX90_ATTRIBUTES, DYFG_ATTRIBUTES, DYHF_ATTRIBUTES, DYTS_ATTRIBUTES, FZF0, FZF0_ATTRIBUTES, FZF1, FZF1_ATTRIBUTES, FZF2, FZF2_ATTRIBUTES, FZF3, FZF3_ATTRIBUTES, FZF4, FZF4_ATTRIBUTES, FZF5, FZF5_ATTRIBUTES, FZF6, FZF6_ATTRIBUTES, FZF7, FZF7_ATTRIBUTES, FZF8, FZF8_ATTRIBUTES, FZF9, FZF9_ATTRIBUTES, HDSD_ATTRIBUTES, HTDD_ATTRIBUTES, PRCP_ATTRIBUTES, PSUN_ATTRIBUTES, SNOW_ATTRIBUTES, TAVG_ATTRIBUTES, TMAX_ATTRIBUTES, TMIN_ATTRIBUTES, TSUN_ATTRIBUTES, WDF1, WDF1_ATTRIBUTES, WDF2, WDF2_ATTRIBUTES, WDF5, WDF5_ATTRIBUTES, WDFG, WDFG_ATTRIBUTES, WDFM, WDFM_ATTRIBUTES, WDF1, WDF1_ATTRIBUTES, WDF2, WDF2_ATTRIBUTES, WSF1, WSF1_ATTRIBUTES, WSF2, WSF2_ATTRIBUTES, WSF5, WSF5_ATTRIBUTES, WSFG, WSFG_ATTRIBUTES, WSFM, WSFM_ATTRIBUTES, LATITUDE, LONGITUDE, ELEVATION, NAME, STATION, TSUN, CDSD, HDSD, DYFG, PSUN, EMNT_ATTRIBUTES, EMSD_ATTRIBUTES, EMSN_ATTRIBUTES, EMXP_ATTRIBUTES, EMXT_ATTRIBUTES))
+```
+
+```{r, include=FALSE}
+### Converting Celsius to Fahrenheit, Millimeters to Inches 
+GBdf2 = GBdf %>% 
+  mutate(TAVG = TAVG*(9/5)+32) %>% 
+  mutate(TMAX = TMAX*(9/5)+32) %>% 
+  mutate(TMIN = TMIN*(9/5)+32)%>% 
+  mutate(PRCP = PRCP/25.4)%>% 
+  mutate(SNOW = SNOW/25.4)
+
+```
+## Introduction 
+
+Weather conditions and the state of the climate has greatly varied throughout the time humans have been recording it. It has been observed that global temperatures have risen steadily over many decades and that temperature is linked with all other weather variables. Now more than ever, it is important to take a closer look at the data from the past to illustrate the consequences of further temperature changes as time goes on. 
+ 
+The graph below shows an average temperature increase from 1900 to 2022 of roughly 1.5 degrees Fahrenheit. While this may not seem significant, the major environmental impacts can be seem with as little as 1 degree of warming. 
+
+```{r, echo=FALSE}
+ggplot(GBdf2, aes(x = DATE, y = TAVG)) +
+  geom_point()+ 
+  geom_smooth(se = FALSE, method = "lm")+ 
+  labs(x = "Average Yearly Temperature (°F)", y = "Year", title = "Average Temperature Over Time", subtitle = "Green Bay, Wisconsin")
+
+```
+
+Through the use of yearly average weather measurements, we will analyze patterns between precipitation, snowfall and temperature to establish correlation between the variables. As temperatures rise, does total precipitation also rise? What is the relationship between increased liquid precipitation and snowfall? What is the relationship between average temperature and snowfall? 
+
+Due to the widely supported theory of climate change and the interconnected nature of earth’s climatological systems, we hypothesize that temperature increases are strongly correlated to increased precipitation and decreased snowfall. 
+
+
+## Background 
+This data was collected from the Green Bay International Airport in Green Bay Wisconsin, U.S. from 1887-2022. This Global Summary of the Year (GSOY), Version 1 was obtained from the National Oceanic and Atmospheric Administration Centers for Environmental Information.^[https://www.ncei.noaa.gov/cdo-web/] 
+
+This dataset includes 137 observations of 109 variables.
+
+
+> Recorded temperature variables include: annual mean temp, mean max temp, mean min temp, heating degree days, cooling degree days, extreme max temp, extreme min temp, number of days max temperature is >=90 degrees and <= 32 degrees, and number of days min temperature is <= 32 degrees and <= 0 degrees, 
+
+> Recorded precipitation variables include: total liquid precipitation, extreme max liquid precipitation, total frozen precipitation, extreme max frozen precipitation, number of days with precipitation >= 0.01”, >= 0.1”, and >=1.0”. 
+
+> Other recorded variables include: number of days with heavy fog and number of days with thunderstorms.
+
+The observations between 1887 and 1899 were removed from the data set due to a large number of missing values. Precipitation variables were converted from millimeters to inches and temperature variables were converted from Celsius to Fahrenheit. Although this data was recorded in a scientific context, converting the units to those most commonly used in the United States makes the analysis and interpretation more meaningful for our specific audience.
+
+
+
+## Analysis
+
+#### Average Temperature and Precipitation
+```{r, echo=FALSE}
+  
+ggplot(GBdf2, aes(x = TAVG, y = PRCP)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Temperature (°F)", y = "Precipitation (inches)", title = "Relationship Between Average Temperature and Precipitation")
+
+```
+
+```{r, echo=FALSE} 
+regression = lm(PRCP ~ TAVG, data = GBdf2)
+intercept = coef(regression)[1]
+slope = coef(regression)[2]
+intercept
+slope
+summary(regression)
+
+x = GBdf2 %>% pull(PRCP)
+y = GBdf2 %>% pull(TAVG)
+r = cor(x, y, use = "complete")
+r
+``` 
+The slope is 0.1805, indicating a slightly positive relationship between average temperature and yearly precipitation, where for each additional degree of average temperature there is 0.1805 additional inches of precipitation per year. This is no surprise, as when the average temperature increases, more water evaporates, eventually causing more precipitation to occur. Unfortunately, the correlation coefficient, r, is 0.0643 which is not large enough to establish any meaningful correlation. 
+
+
+#### Liquid Precipitation and Snowfall
+```{r, echo=FALSE}
+ggplot(GBdf2, aes(x = PRCP, y = SNOW))+ 
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)+
+  labs(x = "Precipitation (inches)", y = "Snowfall (inches)", title = "Relationship Between Precipitation and Snowfall")
+```
+
+```{r, echo=FALSE}
+regression2 = lm(SNOW ~ PRCP, data = GBdf2)
+intercept2 = coef(regression2)[1]
+slope2 = coef(regression2)[2]
+intercept2
+slope2
+summary(regression2)
+x = GBdf2 %>% pull(SNOW)
+y = GBdf2 %>% pull(PRCP)
+r = cor(x, y, use = "complete")
+r
+
+```
+ 
+The slope is 1.0146, indicating a positive relationship between yearly precipitation and yearly snowfall, where for each additional inch of yearly precipitation there is 1.0146 additional inches of snowfall per year. The correlation coefficient, r, is 0.3086 which establishes a weak positive correlation between snowfall and precipitation.
+
+
+#### Average Temperature and Snowfall
+```{r, echo=FALSE}
+ggplot(GBdf2, aes(x = TAVG, y = SNOW))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)+ 
+  labs(x = "Average Temperature (°F)", y = "Snowfall (inches)", title = "Relationship Between Average Temperature and Snowfall")
+
+```
+
+```{r, echo=FALSE}
+regression3 = lm(SNOW ~ TAVG, data = GBdf2)
+intercept3 = coef(regression3)[1]
+slope3 = coef(regression3)[2]
+intercept3
+slope3
+summary(regression3)
+x = GBdf2 %>% pull(SNOW)
+y = GBdf2 %>% pull(TAVG)
+r = cor(x, y, use = "complete")
+r
+```
+The slope is -1.9689, indicating a strong negative relationship between yearly snowfall and average temperature, where for each additional positive degree of average temperature there is 1.9689 fewer inches of snow per year. The correlation coefficient, r,  is -0.2124 which establishes a weak negative correlation between snowfall and average temperature.
+
+
+## Discussion 
+The analysis aimed to establish the correlation between precipitation, snowfall, and temperature based on historical weather data collected from Green Bay International Airport in Green Bay, Wisconsin, U.S. from 1887-2022. The results of the analysis showed a weak positive correlation between precipitation and temperature, a weak positive correlation between precipitation and snowfall, and a weak negative correlation between snowfall and average temperature.
+
+The weak positive correlation between precipitation and temperature (r = 0.0643) suggests that, as the average temperature increases, there is a slight increase in precipitation. This is expected, as increased evaporation rates due to higher temperatures result in more water vapor available for precipitation. However, the correlation coefficient indicates that the relationship is not strong enough to definitively establish a correlation. Therefore, we can say that temperature increases can be observed alongside precipitation increases, but cannot conclude that increased temperature is a direct cause of greater precipitation. 
+
+
+The weak positive correlation between precipitation and snowfall (r = 0.3086) indicates that as precipitation increases, there is a modest increase in snowfall. This could be because of regional climate factors, such as temperature and humidity, influencing both precipitation and snowfall patterns. We can consequently say that precipitation increases can be observed alongside increased snowfall, but cannot conclude that increased precipitation is a direct cause of greater snowfall. 
+
+The weak negative correlation between snowfall and average temperature (r = -0.2124) suggests that snowfall decreases as average temperature increases. This is consistent with the general understanding that higher temperatures lead to a decrease in snowfall events as precipitation falls more as rain rather than snow. Like the others, we can consequently say that temperature decreases can be observed alongside decreases in snowfall, but cannot conclude that decreased temperatures are a direct cause of reduced snowfall. 
+
+Because all of the relationships analyzed only showed weak correlation, we reject our initial hypothesis.
+
+
+#### Shortcomings of the Analysis
+While not necessarily a limitation, as we only drew from one data set, the analysis focused solely on data from Green Bay, Wisconsin. This obviously won’t be representative of broader climate patterns; we would need to repeat this process for many more locations with varying characteristics. Additionally, the correlation coefficients for all relationships studied were relatively weak, suggesting that there are other factors at play affecting the relationships between the variables. It is also important to point out that the values in this dataset are all yearly averages, which may not accurately recount the relationships between weather events. Furthermore, the analysis did not account for other climate related factors, such as humidity and wind, which likely would also affect precipitation, snowfall, and temperature patterns. Climatological patterns may be more clear when analyzing data that is more detailed across years instead of yearly averages.
+
+#### Future Directions
+Future research could expand the scope of the analysis by incorporating data from other locations or by examining relationships between the variables over different time scales. Researchers could also investigate the impact of other previously mentioned climate factors, such as humidity, wind, and cloud cover, on the relationships between precipitation, snowfall, and temperature. Finally, it could be examined whether or not these relationships have evolved over time. 
+
+#### Conclusion
+The analysis showed weak correlations between precipitation, snowfall, and temperature based on historical weather data from Green Bay, Wisconsin. Although the relationships align with general expectations, these weak correlation coefficients indicate that further research is needed to understand the complex interactions between these climate variables. However, our findings do not negate the previously established relationships between temperature and weather events, nor the heavily supported theory of climate change. Expanding the scope of the analysis as suggested in the analysis section and considering additional climate factors could help to provide a more comprehensive understanding of the relationships between precipitation, snowfall, and temperature.
+
+
+>References 
+
