@@ -1,2 +1,2 @@
 # STAT240
-STAT240 Projects
+STAT240 Projects (required data for all projects are in data folder)
